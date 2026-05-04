@@ -224,6 +224,7 @@ function mapChannel(doc) {
     logo:        doc.logo       ?? active?.logo  ?? '',
     group:       doc.group      ?? doc.genre     ?? active?.group ?? '',
     language:    doc.language   ?? '',
+    excelGenre:  doc.excelGenre ?? '', 
     country:     doc.country    ?? '',
     licenseType: active?.licenseType ?? null,
     licenseKey:  active?.licenseKey  ?? null,
