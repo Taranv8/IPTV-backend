@@ -2,6 +2,7 @@
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 require('dotenv').config();
+const { router: streamHealthRouter, ensureIndexes } = require('./routes/streamHealth');
 
 const { CHANNEL_REFERENCE } = require('./channelData');
 
@@ -15,6 +16,37 @@ const EPG_COLL  = 'epgdata';          // ← NEW: EPG collection
 
 let db;
 
+ 
+// 2. Add JSON body-parser if not already present (add once, near app setup):
+app.use(express.json());
+ 
+// 3. Inside your MongoClient.connect() callback, after  db = client.db(DB_NAME):
+MongoClient.connect(MONGO_URI)
+  .then(async function(client) {          // ← async + function keyword (not arrow)
+    db = client.db(DB_NAME);
+    app.locals.db = db;
+    await ensureIndexes(db);
+    app.use('/api/channels', streamHealthRouter);
+
+    console.log('✅ Connected to MongoDB');
+
+    db.collection(COLL_NAME).countDocuments().then(function(n) {
+      console.log('📺 Total documents in ' + COLL_NAME + ':', n);
+    });
+    db.collection(COLL_NAME).countDocuments(WHITELIST_FILTER).then(function(n) {
+      console.log('✅ Whitelisted documents available:', n);
+    });
+    db.collection(EPG_COLL).countDocuments().then(function(n) {
+      console.log('📅 EPG records cached:', n);
+    });
+
+    app.listen(3000, function() {
+      console.log('🚀 Server running on port 3000');
+    });
+  })
+  .catch(function(err) {
+    console.error('❌ MongoDB connection error:', err);
+  });
 // ─── Explicit name overrides ──────────────────────────────────────────────────
 const NAME_OVERRIDES = {
   // ── Hindi Entertainment ────────────────────────────────────────────────────
